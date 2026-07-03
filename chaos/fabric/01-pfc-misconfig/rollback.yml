@@ -1,0 +1,51 @@
+---
+# Scenario 01 — rollback
+#
+# Re-binds the known-good PFC profile to the port and VERIFIES it, rather than
+# assuming success. Mirrors the documented runbook:
+# docs/runbooks/01-pfc-misconfig.md
+#
+# Usage:
+#   ansible-playbook -i ../inventory/hosts.yml rollback.yml \
+#     -e target_switch=leaf01 -e target_interface=swp1 -e pfc_profile=roce-lossless
+
+- name: "Chaos 01: rollback PFC misconfiguration"
+  hosts: "{{ target_switch | default('leaf01') }}"
+  gather_facts: false
+  vars:
+    target_interface: swp1
+    pfc_profile: roce-lossless   # the profile name used in the baseline fabric config
+
+  tasks:
+    - name: Re-bind PFC profile to {{ target_interface }}
+      ansible.builtin.command: >-
+        nv set interface {{ target_interface }} qos pfc profile {{ pfc_profile }}
+
+    - name: Apply config
+      ansible.builtin.command: nv config apply --assume-yes
+
+    - name: Read back PFC binding
+      ansible.builtin.command: nv show interface {{ target_interface }} qos pfc
+      register: pfc_state
+      changed_when: false
+
+    - name: Verify rollback actually restored the profile
+      ansible.builtin.assert:
+        that: pfc_profile in pfc_state.stdout
+        fail_msg: >-
+          PFC profile '{{ pfc_profile }}' not present on
+          {{ target_interface }} after rollback — investigate before walking away.
+        success_msg: "PFC profile restored on {{ inventory_hostname }}:{{ target_interface }}."
+
+    - name: Post-rollback pause counters (should stop climbing within ~1 min under load)
+      ansible.builtin.command: ethtool -S {{ target_interface }}
+      register: counters_after
+      changed_when: false
+
+    - name: Rollback complete
+      ansible.builtin.debug:
+        msg:
+          - "Rolled back at {{ now(utc=true) }}."
+          - "Pause counters (grep pause):"
+          - "{{ counters_after.stdout_lines | select('search', 'pause') | list }}"
+          - "Confirm PFCPauseFrameStorm resolves in Alertmanager, then log detection + recovery times in the scenario table."

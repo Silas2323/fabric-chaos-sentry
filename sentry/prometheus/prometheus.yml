@@ -1,0 +1,43 @@
+global:
+  # 15s keeps detection-time measurements honest — with 60s scrapes, the
+  # "detection time" you record is mostly scrape latency, not rule latency.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # Cumulus switches in the NVIDIA Air lab.
+  # Requires node_exporter on each switch, started with --collector.ethtool
+  # so pause-frame / per-priority counters are exposed.
+  - job_name: fabric-switches
+    static_configs:
+      - targets:
+          - 192.0.2.11:9100   # spine01  TODO: replace with Air mgmt IPs
+          - 192.0.2.12:9100   # spine02
+          - 192.0.2.21:9100   # leaf01
+          - 192.0.2.22:9100   # leaf02
+        labels:
+          layer: fabric
+
+  # Kubernetes cluster nodes (Proxmox VMs). node_exporter runs as a DaemonSet
+  # or via kubespray's addon. For full K8s object metrics, add kube-state-metrics
+  # and/or switch this to kubernetes_sd_configs later.
+  - job_name: k8s-nodes
+    static_configs:
+      - targets:
+          - 192.0.2.31:9100   # k8s-master  TODO: replace
+          - 192.0.2.32:9100   # k8s-worker1
+          - 192.0.2.33:9100   # k8s-worker2
+        labels:
+          layer: k8s
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

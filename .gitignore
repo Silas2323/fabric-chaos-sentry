@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Ansible
+*.retry
+
+# Local state / secrets
+.env
+*.local.yml
+
+# Monitoring stack data volumes (if bind-mounted locally)
+sentry/prometheus/data/
+sentry/grafana/data/
+sentry/alertmanager/data/

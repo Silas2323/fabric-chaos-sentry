@@ -1,0 +1,25 @@
+route:
+  receiver: default
+  group_by: [alertname, instance]
+  group_wait: 15s        # short — we're measuring detection time in a lab
+  group_interval: 1m
+  repeat_interval: 4h
+
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: default
+      group_wait: 5s
+
+receivers:
+  # Lab default: a local webhook you can tail to timestamp alert arrival.
+  #   e.g. `docker run -p 8080:8080 ghcr.io/tomtom-international/alertmanager-webhook-logger`
+  # or any simple HTTP echo server. Swap for Slack/email when needed:
+  #
+  #   slack_configs:
+  #     - api_url: <webhook-url>
+  #       channel: "#fabric-alerts"
+  - name: default
+    webhook_configs:
+      - url: http://host.docker.internal:8080/alert   # TODO: point at your webhook logger
+        send_resolved: true

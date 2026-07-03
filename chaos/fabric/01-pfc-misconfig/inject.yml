@@ -1,0 +1,65 @@
+---
+# Scenario 01 — PFC misconfiguration
+#
+# Unbinds the PFC profile from ONE RoCE-facing port on ONE leaf switch.
+# The lossless traffic class (switch-priority 3, RoCEv2) silently becomes
+# lossy: the port stops honoring/generating priority pause, upstream buffers
+# fill under load, and pause-frame counters on the *neighboring* devices spike.
+#
+# Usage:
+#   ansible-playbook -i ../inventory/hosts.yml inject.yml \
+#     -e target_switch=leaf01 -e target_interface=swp1
+#
+# The change is applied but NOT saved to startup config — a reboot reverts it.
+
+- name: "Chaos 01: PFC misconfiguration on a single port"
+  hosts: "{{ target_switch | default('leaf01') }}"
+  gather_facts: false
+  vars:
+    target_interface: swp1
+
+  tasks:
+    - name: Blast-radius guard — exactly one switch
+      ansible.builtin.assert:
+        that: ansible_play_hosts | length == 1
+        fail_msg: >-
+          This scenario targets exactly one switch.
+          Narrow your -e target_switch / host pattern.
+      run_once: true
+
+    - name: Snapshot pre-injection PFC binding (for the experiment log)
+      ansible.builtin.command: nv show interface {{ target_interface }} qos pfc
+      register: pfc_before
+      changed_when: false
+
+    - name: Snapshot pre-injection pause-frame counters (baseline)
+      ansible.builtin.command: ethtool -S {{ target_interface }}
+      register: counters_before
+      changed_when: false
+
+    - name: Show baseline state
+      ansible.builtin.debug:
+        msg:
+          - "PFC binding before injection:"
+          - "{{ pfc_before.stdout_lines }}"
+          - "Pause counters before injection (grep pause):"
+          - "{{ counters_before.stdout_lines | select('search', 'pause') | list }}"
+
+    - name: INJECT — unbind PFC profile from {{ target_interface }}
+      ansible.builtin.command: nv unset interface {{ target_interface }} qos pfc profile
+
+    - name: Apply pending config (not saved to startup)
+      ansible.builtin.command: nv config apply --assume-yes
+
+    - name: Verify the misconfiguration took effect
+      ansible.builtin.command: nv show interface {{ target_interface }} qos pfc
+      register: pfc_after
+      changed_when: false
+
+    - name: Injection complete — start the clock
+      ansible.builtin.debug:
+        msg:
+          - "PFC unbound from {{ inventory_hostname }}:{{ target_interface }} at {{ now(utc=true) }}."
+          - "Generate RoCE load now (see expected-signals.md) and time the"
+          - "PFCPauseFrameStorm / PFCLosslessClassDrops alerts in Alertmanager."
+          - "Rollback: ansible-playbook rollback.yml -e target_switch={{ inventory_hostname }} -e target_interface={{ target_interface }}"

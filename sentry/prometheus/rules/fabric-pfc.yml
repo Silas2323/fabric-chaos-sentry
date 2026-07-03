@@ -1,0 +1,51 @@
+# Scenario 01 — PFC misconfiguration
+# Paired with chaos/fabric/01-pfc-misconfig/ (1:1 scenario→rule mapping).
+#
+# NOTE: pause-counter metric names vary by NIC driver / node_exporter version:
+# node_ethtool_rx_pause, node_ethtool_rx_pause_ctrl_phy, node_ethtool_rx_prio3_pause...
+# Check `ethtool -S swpX | grep -i pause` on your switches and adjust the
+# regex below to match what your platform actually exposes.
+
+groups:
+  - name: fabric_pfc
+    rules:
+      # Recording rule so dashboards and alerts share one definition of
+      # "pause frame rate" even if the underlying metric name changes.
+      - record: fabric:pause_frames_rx:rate1m
+        expr: sum by (instance, device) (rate({__name__=~"node_ethtool_rx_pause.*"}[1m]))
+
+      - record: fabric:pause_frames_tx:rate1m
+        expr: sum by (instance, device) (rate({__name__=~"node_ethtool_tx_pause.*"}[1m]))
+
+      - alert: PFCPauseFrameStorm
+        expr: fabric:pause_frames_rx:rate1m > 100
+        for: 30s
+        labels:
+          severity: critical
+          layer: fabric
+          scenario: 01-pfc-misconfig
+        annotations:
+          summary: "Pause frame storm on {{ $labels.instance }} {{ $labels.device }}"
+          description: >-
+            Receiving {{ $value | printf "%.0f" }} pause frames/s. Sustained
+            pause pressure means a congestion point where PFC is compensating —
+            check for an unbound PFC profile on a neighboring port.
+          runbook: docs/runbooks/01-pfc-misconfig.md
+
+      - alert: PFCLosslessClassDrops
+        expr: >-
+          sum by (instance, device) (
+            rate(node_network_transmit_drop_total{layer="fabric", device=~"swp.*"}[2m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+          layer: fabric
+          scenario: 01-pfc-misconfig
+        annotations:
+          summary: "Drops on fabric port {{ $labels.instance }} {{ $labels.device }}"
+          description: >-
+            Fabric ports carrying a lossless class should not drop. Drops here
+            while pause counters climb nearby is the PFC-misconfiguration
+            signature.
+          runbook: docs/runbooks/01-pfc-misconfig.md

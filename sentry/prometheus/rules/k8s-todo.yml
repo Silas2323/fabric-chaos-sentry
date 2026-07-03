@@ -1,0 +1,30 @@
+# Stub rules for K8s chaos scenarios (1:1 scenario→rule mapping).
+# Most need kube-state-metrics / cAdvisor scrape jobs that aren't wired up yet.
+#
+# TODO per scenario:
+#   01 pod-kill            → K8sPodChurn            (restart count rate)
+#   02 network-latency     → K8sInterNodeLatencyHigh (blackbox exporter probes)
+#   03 network-partition   → K8sCrossNodeConnectivityLoss (probe failures)
+#   04 resource-starvation → K8sCPUThrottlingHigh, K8sOOMKill
+
+groups:
+  - name: k8s_todo
+    rules:
+      # Works with plain node_exporter — first signal for scenario 04 node-scoped runs.
+      - alert: K8sNodeMemoryPressure
+        expr: >-
+          (node_memory_MemAvailable_bytes{layer="k8s"}
+            / node_memory_MemTotal_bytes{layer="k8s"}) < 0.10
+        for: 2m
+        labels: {severity: warning, layer: k8s, scenario: 04-resource-starvation, status: draft}
+        annotations:
+          summary: "Node {{ $labels.instance }} below 10% available memory (draft rule)"
+          description: "TODO: pair with StressChaos experiment and add OOMKill/throttling rules via cAdvisor."
+
+      # TODO 01: needs kube-state-metrics
+      # - alert: K8sPodChurn
+      #   expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+
+      # TODO 02/03: needs blackbox exporter probing cross-node pod endpoints
+      # - alert: K8sInterNodeLatencyHigh
+      #   expr: probe_duration_seconds > 0.1

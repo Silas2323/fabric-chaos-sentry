@@ -1,0 +1,38 @@
+# Stub rules for fabric scenarios 02–06 (1:1 scenario→rule mapping).
+# Each rule is written but gated behind a placeholder expression until its
+# scenario is implemented and the real metric names are validated in the lab.
+#
+# TODO per scenario:
+#   02 link-flap            → FabricLinkFlapping   (carrier_changes rate)
+#   03 bgp-session-reset    → FabricBGPPeerDown    (needs frr_exporter)
+#   04 ecn-threshold-mistune→ FabricECNMarkingStalled (queue depth high AND ECN rate ~0)
+#   05 mtu-mismatch         → FabricOversizeDrops  (error counters on one hop)
+#   06 gray-failure         → FabricLinkDegraded   (CRC/error *rate*, low threshold)
+
+groups:
+  - name: fabric_todo
+    rules:
+      - alert: FabricLinkFlapping
+        expr: rate(node_network_carrier_changes_total{layer="fabric"}[5m]) * 300 > 3
+        for: 1m
+        labels: {severity: warning, layer: fabric, scenario: 02-link-flap, status: draft}
+        annotations:
+          summary: "Link flapping on {{ $labels.instance }} {{ $labels.device }} (draft rule)"
+          description: "TODO: validate threshold with chaos/fabric/02-link-flap."
+
+      # TODO 03: requires frr_exporter on the switches
+      # - alert: FabricBGPPeerDown
+      #   expr: frr_bgp_peer_state != 6   # 6 = Established
+      #   for: 30s
+
+      # TODO 04: requires per-TC queue depth + ECN mark counters (platform dependent)
+      # - alert: FabricECNMarkingStalled
+      #   expr: queue_depth_high AND rate(ecn_marked_packets[2m]) == 0
+
+      - alert: FabricInterfaceErrors
+        expr: rate(node_network_receive_errs_total{layer="fabric"}[5m]) > 0
+        for: 2m
+        labels: {severity: warning, layer: fabric, scenario: 05-06-shared, status: draft}
+        annotations:
+          summary: "Interface errors on {{ $labels.instance }} {{ $labels.device }} (draft rule)"
+          description: "TODO: split into FabricOversizeDrops (05) and FabricLinkDegraded (06) once scenarios are built."

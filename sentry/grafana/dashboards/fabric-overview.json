@@ -1,0 +1,57 @@
+{
+  "__comment": "Placeholder dashboard — panels for scenario 01 (PFC). TODO: per-scenario rows, BGP state, queue depth, ECN marks, K8s overlays.",
+  "title": "Fabric Overview",
+  "uid": "fabric-overview",
+  "schemaVersion": 39,
+  "editable": true,
+  "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Pause frames RX per port (rate/s)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "fabric:pause_frames_rx:rate1m",
+          "legendFormat": "{{instance}} {{device}} rx"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Pause frames TX per port (rate/s)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "fabric:pause_frames_tx:rate1m",
+          "legendFormat": "{{instance}} {{device}} tx"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Fabric port drops (should be zero)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 9 },
+      "targets": [
+        {
+          "expr": "sum by (instance, device) (rate(node_network_transmit_drop_total{layer=\"fabric\", device=~\"swp.*\"}[2m]))",
+          "legendFormat": "{{instance}} {{device}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "text",
+      "title": "TODO",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 9 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Planned panels\n\n- BGP session state (scenario 03)\n- Queue depth + ECN marks per TC (scenario 04)\n- Interface errors / CRC rate (scenarios 05, 06)\n- K8s pod restarts & node pressure (k8s scenarios)\n- Annotation stream: chaos injection timestamps"
+      }
+    }
+  ]
+}
