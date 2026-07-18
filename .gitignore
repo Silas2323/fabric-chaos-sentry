@@ -10,6 +10,9 @@ __pycache__/
 .env
 *.local.yml
 
+# Claude Code
+CLAUDE.md
+
 # Monitoring stack data volumes (if bind-mounted locally)
 sentry/prometheus/data/
 sentry/grafana/data/
