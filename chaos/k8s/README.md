@@ -1,7 +1,9 @@
 # Kubernetes Chaos Scenarios
 
-Chaos Mesh experiment manifests targeting the Kubernetes cluster (Proxmox VMs,
-deployed via kubespray). Same contract as the fabric scenarios: each folder
+Chaos Mesh experiment manifests targeting a planned Kubernetes cluster
+(Proxmox VMs via kubespray — **the cluster does not exist yet**; this
+directory is scaffolding written ahead of it, see the root README roadmap).
+Same contract as the fabric scenarios: each folder
 gets an experiment manifest (the injection), an `expected-signals.md`, and a
 rollback (for Chaos Mesh, usually `kubectl delete -f` on the experiment, since
 experiments are declarative and self-reverting on deletion).

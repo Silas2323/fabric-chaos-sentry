@@ -24,7 +24,7 @@ fabric (built in NVIDIA Air). Every scenario follows the same contract:
 
 | # | Scenario | Status |
 |---|----------|--------|
-| 01 | [PFC misconfiguration](01-pfc-misconfig/) | ✅ Implemented |
+| 01 | [PFC misconfiguration](01-pfc-misconfig/) | 📝 Scaffolded — playbooks/rules/runbook written, never yet run |
 | 02 | [Link flap](02-link-flap/) | 🚧 Stub |
 | 03 | [BGP session reset](03-bgp-session-reset/) | 🚧 Stub |
 | 04 | [ECN threshold mistuning](04-ecn-threshold-mistune/) | 🚧 Stub |

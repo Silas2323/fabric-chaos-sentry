@@ -32,9 +32,9 @@ nv set system aaa role nvue-admin class nvapply
 nv set system aaa role nvue-monitor class nvshow
 nv set system aaa role system-admin class nvapply
 nv set system aaa role system-admin class sudo
-nv set system aaa user cumulus full-name cumulus,,,
-nv set system aaa user cumulus hashed-password '*'
-nv set system aaa user cumulus role system-admin
+# nv set system aaa user cumulus ... lines scrubbed — nv config show -o commands
+# redacts the real hash as hashed-password '*', which is unmatchable and bricks
+# the account if replayed. See docs/troubleshooting.md.
 nv set system api state enabled
 nv set system config auto-save state enabled
 nv set system control-plane acl acl-default-dos inbound
