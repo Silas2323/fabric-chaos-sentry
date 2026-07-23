@@ -271,7 +271,7 @@ the k8s scrape job in `sentry/` are scaffolding written ahead of it.
 
 - [ ] BFD on fabric links; re-run the convergence drill and record
       before/after numbers against the ~3s baseline above.
-- [ ] Bind an actual RoCEv2 QoS layer (PFC on switch-priority 3 + ECN/DCQCN
+- [*] Bind an actual RoCEv2 QoS layer (PFC on switch-priority 3 + ECN/DCQCN
       thresholds) on the base fabric — today only the F01 chaos scenario
       assumes this exists; the known-good profile itself isn't built yet.
 - [ ] Run F01 for the first time against real RDMA load and record measured
