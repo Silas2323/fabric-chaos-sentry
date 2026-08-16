@@ -1,0 +1,55 @@
+fabric:
+  spines:
+    - hostname: SPINE-1
+      loopback: 10.0.0.1/32
+      asn: 65100
+      mgmt_ip: 192.168.X.X    # fill in your EVE-NG mgmt IPs
+    - hostname: SPINE-2
+      loopback: 10.0.0.2/32
+      asn: 65100
+      mgmt_ip: 192.168.X.X
+  leaves:
+    - hostname: LEAF-1
+      loopback: 10.0.0.11/32
+      asn: 65101
+      mgmt_ip: 192.168.X.X
+      fabric_links:
+        - interface: Ethernet2
+          ip: 10.1.1.2/30
+          neighbor_ip: 10.1.1.1
+          neighbor: SPINE-1
+        - interface: Ethernet1
+          ip: 10.1.1.10/30
+          neighbor_ip: 10.1.1.9
+          neighbor: SPINE-2
+      vlans:
+        - id: 10
+          name: RoCE
+          vni: 10010
+        - id: 20
+          name: IRB
+          vni: 10020
+      l3vni: 104001
+      anycast_mac: 44:38:39:ff:00:01
+    - hostname: LEAF-2
+      loopback: 10.0.0.12/32
+      asn: 65102
+      mgmt_ip: 192.168.X.X
+      fabric_links:
+        - interface: Ethernet2
+          ip: 10.1.1.6/30
+          neighbor_ip: 10.1.1.5
+          neighbor: SPINE-1
+        - interface: Ethernet1
+          ip: 10.1.1.14/30
+          neighbor_ip: 10.1.1.13
+          neighbor: SPINE-2
+      vlans:
+        - id: 10
+          name: RoCE
+          vni: 10010
+        - id: 20
+          name: IRB
+          vni: 10020
+      l3vni: 104001
+      anycast_mac: 44:38:39:ff:00:01

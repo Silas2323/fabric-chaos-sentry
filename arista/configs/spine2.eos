@@ -1,0 +1,85 @@
+SPINE-2#show run
+! Command: show running-config
+! device: SPINE-2 (vEOS-lab, EOS-4.32.11M)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+management api http-commands
+   no shutdown
+!
+no service interface inactive port-id allocation disabled
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname SPINE-2
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+vrf instance management
+!
+interface Ethernet1
+   description LEAF-1
+   mac-address 50:00:00:d6:5d:01
+   no switchport
+   ip address 10.1.1.9/30
+!
+interface Ethernet2
+   description LEAF-2
+   mac-address 50:00:00:d6:5d:02
+   no switchport
+   ip address 10.1.1.13/30
+!
+interface Ethernet3
+!
+interface Ethernet4
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Loopback0
+   ip address 10.0.0.2/32
+!
+interface Management1
+   vrf management
+   ip address 192.168.15.63/24
+!
+ip routing
+no ip routing vrf management
+!
+ip route vrf management 0.0.0.0/0 192.168.15.254
+!
+router bgp 65100
+   router-id 10.0.0.2
+   neighbor 10.1.1.10 remote-as 65101
+   neighbor 10.1.1.14 remote-as 65102
+   redistribute connected
+   !
+   address-family evpn
+      neighbor 10.1.1.10 activate
+      neighbor 10.1.1.14 activate
+   !
+   address-family ipv4
+      neighbor 10.1.1.10 activate
+      neighbor 10.1.1.14 activate
+!
+router multicast
+   ipv4
+      software-forwarding kernel
+   !
+   ipv6
+      software-forwarding kernel
+!
+end

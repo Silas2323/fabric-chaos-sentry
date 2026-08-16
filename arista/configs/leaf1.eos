@@ -1,0 +1,110 @@
+LEAF-1#show ru
+! Command: show running-config
+! device: LEAF-1 (vEOS-lab, EOS-4.32.11M)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+management api http-commands
+   no shutdown
+!
+no service interface inactive port-id allocation disabled
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname LEAF-1
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+vlan 10
+   name ROCE
+!
+vlan 20
+   name IRB
+!
+vrf instance management
+!
+interface Ethernet1
+   description SPINE-2
+   no switchport
+   ip address 10.1.1.10/30
+!
+interface Ethernet2
+   description SPINE-1
+   no switchport
+   ip address 10.1.1.2/30
+!
+interface Ethernet3
+!
+interface Ethernet4
+!
+interface Ethernet5
+   switchport access vlan 10
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Loopback0
+   ip address 10.0.0.11/32
+!
+interface Management1
+   vrf management
+   ip address 192.168.15.60/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4789
+   vxlan vlan 10 vni 10010
+   vxlan vlan 20 vni 10020
+   vxlan flood vtep 10.0.0.12
+!
+ip routing
+no ip routing vrf management
+!
+ipv6 unicast-routing
+!
+ip route vrf management 0.0.0.0/0 192.168.15.254
+!
+router bgp 65101
+   router-id 10.0.0.11
+   maximum-paths 2
+   neighbor 10.1.1.1 remote-as 65100
+   neighbor 10.1.1.9 remote-as 65100
+   redistribute connected
+   !
+   vlan 10
+      rd 10.0.0.11:10010
+      route-target both 10010:10010
+      redistribute learned
+   !
+   vlan 20
+      rd 10.0.0.11:10020
+      route-target both 10020:10020
+      redistribute learned
+   !
+   address-family evpn
+      neighbor 10.1.1.1 activate
+      neighbor 10.1.1.9 activate
+   !
+   address-family ipv4
+      neighbor 10.1.1.1 activate
+      neighbor 10.1.1.9 activate
+!
+router multicast
+   ipv4
+      software-forwarding kernel
+   !
+   ipv6
+      software-forwarding kernel
+!
+end
