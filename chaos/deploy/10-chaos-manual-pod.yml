@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chaos-manual
+  namespace: fabric-chaos
+  labels:
+    app: chaos
+spec:
+  containers:
+  - name: chaos
+    image: python:3.12-slim
+    command: ["sh", "-c", "pip install --quiet netmiko pyyaml && sleep infinity"]
+    env:
+    - name: SW_USER
+      valueFrom:
+        secretKeyRef: {name: switch-creds, key: username}
+    - name: SW_PASS
+      valueFrom:
+        secretKeyRef: {name: switch-creds, key: password}
+    volumeMounts:
+    - name: inventory
+      mountPath: /etc/fabric
+  volumes:
+  - name: inventory
+    configMap:
+      name: fabric-inventory

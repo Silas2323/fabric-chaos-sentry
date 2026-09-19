@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-inventory
+  namespace: fabric-chaos
+data:
+  inventory.yml: |
+    devices:
+      spine1: {host: 192.168.15.62, device_type: arista_eos}
+      spine2: {host: 192.168.15.63, device_type: arista_eos}

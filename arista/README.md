@@ -66,7 +66,7 @@ EVPN routes; they do not run VXLAN or originate VTEPs.
 
 **Leaves:** Full L2 EVPN-VXLAN edge configuration.
 
-| VLAN | Name | VNI   | Route-target   |
+| VLAN | Name | VNI   | Route-target   
 |------|------|-------|----------------|
 | 10   | RoCE | 10010 | 10010:10010    |
 | 20   | IRB  | 10020 | 10020:10020    |
