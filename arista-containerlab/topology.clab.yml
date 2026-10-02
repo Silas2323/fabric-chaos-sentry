@@ -57,7 +57,7 @@ topology:
       cmd: tail -f /dev/null
       exec:
         - ip link set dev eth1 address 00:aa:bb:00:00:04
-        - ip addr add 10.10.10.20/24 dev eth1 #LEAF2 VLAN20
+        - ip addr add 10.20.20.20/24 dev eth1 #LEAF2 VLAN20
     # host5:
     #   kind: linux
     #   cmd: tail -f /dev/null
