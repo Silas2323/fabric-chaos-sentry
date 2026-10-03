@@ -21,9 +21,9 @@ graph TD
     spine1 --- leaf1 & leaf2 & leaf3 & leaf4
     spine2 --- leaf1 & leaf2 & leaf3 & leaf4
     leaf1 --- host1["host1 (VLAN 10)"]
-    leaf2 --- host2["host2 (VLAN 20)"]
-    leaf3 --- host3["host3 (VLAN 10)"]
-    leaf4 --- host4["host4 (VLAN 20)"]
+    leaf1 --- host2["host2 (VLAN 20)"]
+    leaf2 --- host3["host3 (VLAN 10)"]
+    leaf2 --- host4["host4 (VLAN 20)"]
 ```
 
 | Node   | Loopback0   | ASN   | Ports |
@@ -47,8 +47,8 @@ Leaves run `maximum-paths 2`, so every remote loopback has two equal-cost paths.
 
 | VLAN | VNI   | Route-target | Hosts |
 |------|-------|--------------|-------|
-| 10   | 10010 | 10010:10010  | host1 (leaf1), host3 (leaf3) |
-| 20   | 10020 | 10020:10020  | host2 (leaf2), host4 (leaf4) |
+| 10   | 10010 | 10010:10010  | host1 (leaf1), host3 (leaf2) |
+| 20   | 10020 | 10020:10020  | host2 (leaf1), host4 (leaf2) |
 
 - EVPN address family between each leaf and both spines. The spines relay routes and
   use `next-hop-unchanged`, so the leaf loopbacks stay the VXLAN tunnel endpoints.
@@ -60,17 +60,19 @@ an anycast gateway) is the next step and is not configured yet.
 
 ## Hosts
 
-Four lightweight Alpine containers, one per leaf on `eth3`, with fixed MACs:
+Four lightweight Alpine containers with fixed MACs: two on leaf1 and two on leaf2, one
+per VLAN on each (`eth3` is the VLAN 10 port and `eth4` is the VLAN 20 port):
 
-| Host  | Leaf  | VLAN | Address        |
-|-------|-------|------|----------------|
-| host1 | leaf1 | 10   | 10.10.10.11/24 |
-| host2 | leaf2 | 20   | 10.20.20.11/24 |
-| host3 | leaf3 | 10   | 10.10.10.12/24 |
-| host4 | leaf4 | 20   | 10.20.20.12/24 |
+| Host  | Leaf  | Port | VLAN | Address        |
+|-------|-------|------|------|----------------|
+| host1 | leaf1 | eth3 | 10   | 10.10.10.11/24 |
+| host2 | leaf1 | eth4 | 20   | 10.20.20.11/24 |
+| host3 | leaf2 | eth3 | 10   | 10.10.10.12/24 |
+| host4 | leaf2 | eth4 | 20   | 10.20.20.20/24 |
 
-`host5` to `host8` and the leaf `eth4` ports are in the topology file, commented out,
-for a two-hosts-per-leaf layout.
+leaf3 and leaf4 have no hosts yet. `host5` to `host8` for them are in the topology file,
+commented out; uncomment a host and its link to attach it. The hosts have no SSH server,
+so use `docker exec -it clab-arista-evpn-host1 sh` to get a shell.
 
 ## Run it
 
@@ -100,9 +102,11 @@ show vxlan address-table            # MACs learned over VXLAN
 From the host running the lab:
 
 ```bash
-docker exec clab-arista-evpn-host1 ping -c 3 10.10.10.12   # VLAN 10, leaf1 to leaf3
-docker exec clab-arista-evpn-host2 ping -c 3 10.20.20.12   # VLAN 20, leaf2 to leaf4
+docker exec clab-arista-evpn-host1 ping -c 3 10.10.10.12   # VLAN 10, leaf1 to leaf2
+docker exec clab-arista-evpn-host2 ping -c 3 10.20.20.20   # VLAN 20, leaf1 to leaf2
 ```
+
+Hosts in different VLANs cannot reach each other yet; that needs the L3 step below.
 
 ## Status
 
@@ -110,8 +114,8 @@ docker exec clab-arista-evpn-host2 ping -c 3 10.20.20.12   # VLAN 20, leaf2 to l
   all underlay and EVPN sessions established, each leaf saw the three remote VTEPs,
   loopbacks had two equal-cost paths, and pings across leaves in VLAN 10 and VLAN 20
   had 0% loss.
-- **Not yet run:** the four-host layout above has been validated with
-  `containerlab validate` but not yet deployed end to end.
+- **Current layout** (the four hosts on leaf1 and leaf2 above): deployed and tested by
+  the author; the earlier two-hosts-per-leaf run is the one with the detailed results above.
 - **Not done:** symmetric IRB (L3), and chaos scenarios against this fabric.
 
 The `admin` / `admin` login in the switch configs is the Containerlab default for a

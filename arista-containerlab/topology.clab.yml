@@ -33,7 +33,8 @@ topology:
       startup-config: configs/leaf4.cfg
       startup-delay: 225
 
-    # Hosts: odd = VLAN 10 (10.10.10.0/24) on leaf eth3, even = VLAN 20 (10.20.20.0/24) on leaf eth4.
+    # Two hosts each on leaf1 and leaf2: eth3 = VLAN 10 (10.10.10.0/24), eth4 = VLAN 20 (10.20.20.0/24).
+    # host5-host8 (leaf3/leaf4) are commented out; uncomment a host and its link to attach it.
     host1:
       kind: linux
       cmd: tail -f /dev/null
