@@ -1,5 +1,7 @@
 # Arista EVPN-VXLAN on Containerlab (cEOS)
 
+> **Work in progress.** The topology, addressing and host layout are still changing.
+
 A 2-spine, 4-leaf EVPN-VXLAN fabric on **Arista cEOS 4.32.0F**, defined as code and
 run in [Containerlab](https://containerlab.dev). It is the container-based successor
 to the [EVE-NG build](../arista/README.md): same ASN layout and VNI mapping, but the
@@ -114,8 +116,8 @@ Hosts in different VLANs cannot reach each other yet; that needs the L3 step bel
   all underlay and EVPN sessions established, each leaf saw the three remote VTEPs,
   loopbacks had two equal-cost paths, and pings across leaves in VLAN 10 and VLAN 20
   had 0% loss.
-- **Current layout** (the four hosts on leaf1 and leaf2 above): deployed and tested by
-  the author; the earlier two-hosts-per-leaf run is the one with the detailed results above.
+- **Work in progress:** the layout above (four hosts on leaf1 and leaf2) is under active
+  testing, and the results listed above are from the earlier two-hosts-per-leaf run.
 - **Not done:** symmetric IRB (L3), and chaos scenarios against this fabric.
 
 The `admin` / `admin` login in the switch configs is the Containerlab default for a
