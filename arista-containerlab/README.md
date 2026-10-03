@@ -57,8 +57,25 @@ Leaves run `maximum-paths 2`, so every remote loopback has two equal-cost paths.
 - Flooding uses EVPN type-3 (IMET) routes, not static flood lists.
 - VLAN-aware BGP with a per-VLAN RD of `<loopback>:<vni>`.
 
-This is **Layer 2 EVPN-VXLAN stretch**. Inter-VLAN routing (SVIs, a VRF, an L3 VNI and
-an anycast gateway) is the next step and is not configured yet.
+## Inter-VLAN routing (IRB)
+
+leaf1 and leaf2 route between the VLANs with an anycast gateway. Both SVIs sit in one VRF,
+`cust_a`, because routing between two different VRFs would need route leaking.
+
+- **Anycast gateway:** `interface Vlan10` is `10.10.10.1/24` and `interface Vlan20` is
+  `10.20.20.1/24`, both `ip address virtual`, with the same virtual MAC on every leaf
+  (`ip virtual-router mac-address 00:88:88:88:88:88`). Hosts use these as their default gateway.
+- **Asymmetric IRB** is the base: the ingress leaf routes between VLANs and the egress leaf
+  only bridges, so the two directions of a flow use different VNIs (10010 one way, 10020 back).
+  It needs both VLANs and both VNI mappings on every leaf involved.
+- **Symmetric IRB** is added on top: `vxlan vrf cust_a vni 1000` (the L3 VNI) and a
+  `vrf cust_a` section under `router bgp` with `rd <loopback>:1000`, route-target 1000:1000,
+  and `redistribute connected`. The host subnets are then advertised as EVPN type-5
+  (ip-prefix) routes.
+
+The saved leaf1 and leaf2 configs include both, so they are the symmetric variant. Delete
+the `vxlan vrf` line and the BGP `vrf cust_a` block to get plain asymmetric IRB.
+leaf3 and leaf4 have no hosts, so they have no SVIs or VRF yet.
 
 ## Hosts
 
@@ -73,8 +90,10 @@ per VLAN on each (`eth3` is the VLAN 10 port and `eth4` is the VLAN 20 port):
 | host4 | leaf2 | eth4 | 20   | 10.20.20.20/24 |
 
 leaf3 and leaf4 have no hosts yet. `host5` to `host8` for them are in the topology file,
-commented out; uncomment a host and its link to attach it. The hosts have no SSH server,
-so use `docker exec -it clab-arista-evpn-host1 sh` to get a shell.
+commented out; uncomment a host and its link to attach it. Each host's default route points
+at its VLAN's anycast gateway (`ip route replace default via 10.10.10.1 dev eth1`, or
+`10.20.20.1` for VLAN 20), set in the topology's `exec:` list. The hosts have no SSH
+server, so use `docker exec -it clab-arista-evpn-host1 sh` to get a shell.
 
 ## Run it
 
@@ -99,6 +118,8 @@ show ip route 10.0.0.14/32          # two equal-cost paths via the spines
 show bgp evpn summary               # overlay sessions established
 show vxlan vtep                     # the other leaves' loopbacks
 show vxlan address-table            # MACs learned over VXLAN
+show vrf                            # leaf1/leaf2: Vl10 and Vl20 both in cust_a
+show bgp evpn route-type ip-prefix ipv4   # host subnets as type-5 routes
 ```
 
 From the host running the lab:
@@ -106,19 +127,38 @@ From the host running the lab:
 ```bash
 docker exec clab-arista-evpn-host1 ping -c 3 10.10.10.12   # VLAN 10, leaf1 to leaf2
 docker exec clab-arista-evpn-host2 ping -c 3 10.20.20.20   # VLAN 20, leaf1 to leaf2
+docker exec clab-arista-evpn-host1 ping -c 3 10.20.20.11   # across VLANs, same leaf
+docker exec clab-arista-evpn-host1 ping -c 3 10.20.20.20   # across VLANs, across leaves
 ```
 
-Hosts in different VLANs cannot reach each other yet; that needs the L3 step below.
+## Packet captures
+
+`./capture` is mounted at `/tmp` in every switch, so a capture written there appears in
+this folder on the host (captures are git-ignored). Use the `eth` names from the topology:
+
+```bash
+docker exec -it clab-arista-evpn-leaf1 tcpdump -ni eth3                      # live, host1 port
+docker exec clab-arista-evpn-leaf1 tcpdump -ni eth1 -w /tmp/leaf1-eth1.pcap  # to ./capture
+docker exec clab-arista-evpn-leaf1 tcpdump -ni eth1 -vv udp port 4789        # VXLAN, shows VNIs
+```
+
+The bind is applied when the lab is deployed, so redeploy after adding it.
 
 ## Status
 
-- **Verified** on an earlier run of this fabric with two hosts per leaf (8 hosts):
-  all underlay and EVPN sessions established, each leaf saw the three remote VTEPs,
-  loopbacks had two equal-cost paths, and pings across leaves in VLAN 10 and VLAN 20
-  had 0% loss.
-- **Work in progress:** the layout above (four hosts on leaf1 and leaf2) is under active
-  testing, and the results listed above are from the earlier two-hosts-per-leaf run.
-- **Not done:** symmetric IRB (L3), and chaos scenarios against this fabric.
+- **Verified (2026-10-03)** on a fresh `containerlab deploy` from the files in this folder,
+  with the four hosts above: BGP came up on its own, and every host pair, same VLAN and
+  across VLANs, on the same leaf and across leaves, had 0% loss with the symmetric IRB
+  config. leaf1 advertises 10.10.10.0/24 and 10.20.20.0/24 as EVPN type-5 routes with RD
+  `10.0.0.11:1000`, and the `capture` bind delivered a `.pcap` to this folder.
+- **Verified earlier** on a two-hosts-per-leaf layout at L2: underlay and EVPN sessions
+  established, each leaf saw the three remote VTEPs, loopbacks had two equal-cost paths,
+  and same-VLAN pings across leaves had 0% loss.
+- **How the IRB config got here:** it was first applied by hand on the running switches,
+  then copied into the leaf configs with leaf2's L3 RD corrected to its own loopback, and
+  then confirmed by the fresh deploy above.
+- **Work in progress:** leaf3 and leaf4 have no hosts or SVIs yet, and the chaos scenarios
+  against this fabric are not done.
 
 The `admin` / `admin` login in the switch configs is the Containerlab default for a
 throwaway lab, not a recommendation.

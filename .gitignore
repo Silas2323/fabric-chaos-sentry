@@ -13,6 +13,12 @@ __pycache__/
 # Claude Code
 CLAUDE.md
 
+# Containerlab runtime output and packet captures
+clab-*/
+arista-containerlab/capture/*
+!arista-containerlab/capture/.gitkeep
+*.pcap
+
 # Monitoring stack data volumes (if bind-mounted locally)
 sentry/prometheus/data/
 sentry/grafana/data/

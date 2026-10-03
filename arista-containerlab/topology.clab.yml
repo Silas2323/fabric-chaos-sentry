@@ -4,6 +4,9 @@ topology:
   kinds:
     arista_ceos:
       image: ceos:4.32.0F
+      # ./capture is mounted at /tmp in every switch, so tcpdump -w /tmp/<file>.pcap lands here.
+      binds:
+        - capture:/tmp/
     linux:
       image: alpine:3.20
 
@@ -41,24 +44,28 @@ topology:
       exec:
         - ip link set dev eth1 address 00:aa:bb:00:00:01
         - ip addr add 10.10.10.11/24 dev eth1 #LEAF1 VLAN10
+        - ip route replace default via 10.10.10.1 dev eth1
     host2:
       kind: linux
       cmd: tail -f /dev/null
       exec:
         - ip link set dev eth1 address 00:aa:bb:00:00:02
         - ip addr add 10.20.20.11/24 dev eth1 #LEAF1 VLAN20
+        - ip route replace default via 10.20.20.1 dev eth1
     host3:
       kind: linux
       cmd: tail -f /dev/null
       exec:
         - ip link set dev eth1 address 00:aa:bb:00:00:03
         - ip addr add 10.10.10.12/24 dev eth1 #LEAF2 VLAN10
+        - ip route replace default via 10.10.10.1 dev eth1
     host4:
       kind: linux
       cmd: tail -f /dev/null
       exec:
         - ip link set dev eth1 address 00:aa:bb:00:00:04
         - ip addr add 10.20.20.20/24 dev eth1 #LEAF2 VLAN20
+        - ip route replace default via 10.20.20.1 dev eth1
     # host5:
     #   kind: linux
     #   cmd: tail -f /dev/null
